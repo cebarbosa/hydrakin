@@ -88,7 +88,7 @@ class CanvasImage():
         plt.annotate("E", (x+l + 5.5 ,y-1.5), color=c, size=15)
         return
 
-    def draw_literature(self):
+    def draw_literature(self, ax):
         """ Draw slits from the literature: Ventimiglia et al. 2010 and 
             Richtler et al. 2011. """
         ra = np.array([159.1910417, 159.1780833, self.ra0, self.ra0])
