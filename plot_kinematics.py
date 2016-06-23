@@ -19,8 +19,10 @@ def get_ventimiglia2010():
                                 "ventimiglia_kin.txt"), usecols=np.arange(6)).T
     x, y = radec2xy(ra, dec)
     r, theta = xy2polar(x, y)
+    velocity_offset = 72.0
     z = np.nan * np.zeros_like(v)
-    return np.column_stack((x, y, r, theta, v,verr, sig, sigerr, z, z, z, z))
+    return np.column_stack((x, y, r, theta, v+velocity_offset,verr, sig,
+                            sigerr, z, z, z, z))
 
 def get_richtler():
     """ Retrieve data from Richtler et al. 2011. """
@@ -39,9 +41,10 @@ def get_richtler():
         x = r * np.sin(np.deg2rad(theta))
         y = r * np.cos(np.deg2rad(theta))
         r, theta = xy2polar(x, y)
+        velocity_offset = -14.0
         z = np.nan * np.zeros_like(v)
-        table = np.column_stack((x, y, r, theta, v, verr, sig, sigerr, z, z,
-                                 z, z))
+        table = np.column_stack((x, y, r, theta, v + velocity_offset, verr,
+                                 sig, sigerr, z, z, z, z))
         if i == 0:
             tables = table
         else:
@@ -67,11 +70,14 @@ def plot_cones(datasets, pas=None, dpa=22.5):
     # General setting for the plots
     colors = ("r", "b", "g")
     symbols = ("o", "s", "^")
-    ylims = [[3600, 4200], [100, 600], [-.3, .3], [-.3,.3]]
+    ylims = [[3300, 4600], [100, 600], [-.3, .3], [-.3,.3]]
     xlims = [-40, 40]
-    ylabels = ["V (km/s)", "$\sigma$ (km/s)", "$h_3$", "$h_4$"]
+    ylabels = [r"$V_{\rm{LOS}}$ (km/s)", r"$\sigma_{\rm{LOS}}$ (km/s)",
+               r"$h_3$", r"$h_4$"]
     mec = "0.7" # Grayscale level for bars and symbol edge colors
     names = ["rad_vel", "rad_sigma", "rad_h3", "rad_h4"]
+    sn_min = [15, 15, 30, 30]
+    sn = np.loadtxt(intable, usecols=(14,))
     ##########################################################################
     # Set the default position angles
     if pas is None:
@@ -81,7 +87,7 @@ def plot_cones(datasets, pas=None, dpa=22.5):
         for i, d in enumerate(datasets):
             x, y, r, theta = d[:,:4].T
             moment = d[:,np.arange(4,12,2)[mm]].T
-            error = d[:,np.arange(5,13,2)[mm]].T
+            error = np.clip(d[:,np.arange(5,13,2)[mm]].T, 0, 1000)
             fig = plt.figure(1, figsize=(6, 8.5))
             for j, pa in enumerate(pas):
                 ###############################################################
@@ -104,6 +110,13 @@ def plot_cones(datasets, pas=None, dpa=22.5):
                     #==========================================================
                 idx1 = np.unique(np.array(idx1).ravel())
                 idx2 = np.unique(np.array(idx2).ravel())
+                #=============================================================
+                # S/N cut for our dataset
+                if i == 0:
+                    idxsn = np.where(sn > sn_min[mm])
+                    idx1 = np.intersect1d(idx1, idxsn)
+                    idx2 = np.intersect1d(idx2, idxsn)
+                #=============================================================
                 ##############################################################
                 # Produces figure
                 ax = plt.subplot(len(pas), 1, j+1)
