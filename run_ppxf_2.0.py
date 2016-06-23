@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 from ppxf import ppxf
 import ppxf_util as util
-from setup_n3311 import *
+from config import *
  
 def run_ppxf(spectra, velscale):
     """ Run pPXF in a list of spectra"""

@@ -155,7 +155,7 @@ class CanvasImage():
         """ Get position of slits by the identification of slits """
         xy = []
         for i, idd in enumerate(ids):
-            index = canvas.slits.ids.index(idd)
+            index = self.slits.ids.index(idd)
             xy.append([self.slits.x[index], self.slits.y[index]])
         return np.array(xy)
 

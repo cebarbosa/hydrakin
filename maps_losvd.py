@@ -8,6 +8,7 @@ Produces maps for LOSVD for the Hydra I cluster core
 """
 from __future__ import division
 import os
+from getpass import getuser
 
 import numpy as np
 import scipy.ndimage as ndimage
@@ -108,6 +109,7 @@ def merge_tables():
     x,y = get_positions(sref).T
     r = np.sqrt(x*x + y*y)
     pa = np.rad2deg(np.arctan2(x, y))
+    pa[pa < -90.] += 360.
     data1 = np.loadtxt(filename, usecols=np.arange(1,11))
     ##########################################################################
     # Account for difference in resolution
@@ -167,8 +169,8 @@ def get_ventimiglia():
     ra, dec, v, verr, sig, sigerr= np.loadtxt(os.path.join(tables_dir,
                                 "ventimiglia_kin.txt"), usecols=np.arange(6)).T
     ra0v, dec0v = 159.17794743, -27.52809205
-    x = 1.25 * canvas.arcsec2kpc(3600 * (ra - canvas.ra0))
-    y = 1.25 * canvas.arcsec2kpc(3600 * (dec - canvas.dec0))
+    x = 1.25 * canvas.arcsec2kpc(3600 * (ra - ra0v))
+    y = 1.25 * canvas.arcsec2kpc(3600 * (dec - dec0v))
     vmean = np.mean(v[x**2+y**2<20])
     velocity_offset = 50
     return np.column_stack((x, y, v + velocity_offset, sig))
@@ -495,24 +497,26 @@ def make_kinematics():
     # Read data values for vel, sigma, h3, h4
     data = np.loadtxt(outtable, usecols=(5,7,9,11)).T
     xall, yall, sn = np.loadtxt(outtable, usecols=(1,2,14,)).T
-    ###############################################
+    ###########################################################################
     # Details of the maps
     names = [r"vel", r"sigma", r"h3", r"h4"]
     cb_label = [r"V$_{\rm LOS}$ (km/s)", r"$\sigma_{\rm LOS}$ (km/s)",
                 r"$h_3$", r"$h_4$"]
     # lims = [[3750,4000], [150,500], [-0.08, 0.08], [-0.15, 0.15] ]
-    lims = [[3700, 4100], [180, 600], [-0.06, 0.06], [-0.03, 0.11]]
+    lims = [[3700, 4100], [180, 500], [-0.06, 0.06], [-0.03, 0.11]]
     xcb = [0.068, 0.385, 0.705]
-    ###############################################
+    ###########################################################################
     # Set the threshold S/N for smoothing
     # Higher values than this values are not smoothed
-    sn = 1.8 * sn
-    sn_thres = [25., 25., 1000, 1000]
-    ###############################################
+    sn_thres = [25, 25, 1000, 1000]
+    ###########################################################################
     # Read values of other authors
     tab1a, tab1b = get_richtler()
     tab2 = get_ventimiglia()
-    ###############################################
+    ###########################################################################
+    # Set the colormap
+    cmap = "cubelaw"
+    ###########################################################################
     # Loop for figures
     for i, vector in enumerate(data):
         print "Producing figure for {0}...".format(names[i])
@@ -542,11 +546,8 @@ def make_kinematics():
             ax = plt.subplot(gs[j])
             norm = Normalize(vmin=vmin, vmax=vmax)
             coll = PolyCollection(polygons_bins[good], array=vs[j],
-                                 # cmap="Spectral",
-                                 # cmap="Spectral",
-				                 # cmap="cubelaw",
-                                  cmap="cubelaw",
-                                  edgecolors='w', norm=norm, linewidths=0.4)
+                                 cmap=cmap, edgecolors='w', norm=norm,
+                                 linewidths=0.4)
             draw_map(fig, ax, coll)
             draw_contours(contours[j], fig, ax)
             plt.gca().add_patch(Rectangle((18,-36),20,10, alpha=1, zorder=10000,
@@ -570,7 +571,7 @@ def make_kinematics():
                 segments = np.concatenate([points[:-1], points[1:]],
                                           axis=1)
                 lc = LineCollection(segments, array=tab[:,i+2],
-                                cmap="cubelaw", norm=norm, lw=5)
+                                cmap=cmap, norm=norm, lw=5)
                 ax.add_collection(lc)
                 add_borders(ax, points, c=bc[k])
         # plt.savefig("figs/{0}.pdf".format(names[i]))
@@ -662,7 +663,7 @@ if __name__ == "__main__":
     # make_sn()
     ####################################################
     # Produce maps for all moments
-    # make_kinematics()
+    make_kinematics()
     # make_kin_summary(loess=True, contours="residual", format="png",
     #                 sn_lims=[5.0,10.0,15.0,15.0], sn_loess=[20,20,300,300],
     #                 sn_sig=False)
