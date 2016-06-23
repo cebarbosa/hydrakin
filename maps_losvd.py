@@ -109,7 +109,7 @@ def merge_tables():
     x,y = get_positions(sref).T
     r = np.sqrt(x*x + y*y)
     pa = np.rad2deg(np.arctan2(x, y))
-    pa[pa < -90.] += 360.
+    pa[pa < 0.] += 360.
     data1 = np.loadtxt(filename, usecols=np.arange(1,11))
     ##########################################################################
     # Account for difference in resolution
