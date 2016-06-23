@@ -142,4 +142,4 @@ if __name__ == "__main__":
     data[idx,3] += 360.
     v10 = get_ventimiglia2010()
     r11 = get_richtler()
-    plot_cones((data, v10, r11))
+    plot_cones((data, v10, r11), pas=None, dpa=22.5)
