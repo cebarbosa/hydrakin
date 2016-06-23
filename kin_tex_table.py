@@ -23,19 +23,24 @@ def make_tex_table(usepoly=False):
     os.chdir(workdir)
     table = "ppxf_results.dat"
     specs = np.loadtxt(table, usecols=(0,), dtype=str)
-    ids = [x.split("n3311")[1][:-5].replace("_", " ").upper() for x in specs]
+    ids = [x.split("n3311")[1][:-5].replace("_", " ").lower() for x in specs]
     ##########################################################################
     # Get location of the slits
     coords = get_coords(specs)
     # Version with astropy
     ra = [str(x) for x in Angle(coords[:,0], unit=units.hour)]
     dec = [str(x) for x in Angle(coords[:,1], unit=units.degree)]
+    rasec = ["{0:04.1f}".format(float(x.split("m")[1][:-1])) for x in ra]
+    decsec = ["{0:04.1f}".format(float(x.split("m")[1][:-1])) for x in dec]
+    ra = ["{0}m{1}s".format(x.split("m")[0],y) for x,y in zip(ra,rasec)]
+    dec = ["{0}m{1}s".format(x.split("m")[0],y) for x,y in zip(dec,decsec)]
     # Version without astropy
     # ra, dec = coords.T
     x,y = get_positions(specs).T
     r = np.sqrt(x*x + y*y)
     r = np.array(["{0:.1f}".format(x) for x in r])
     pa = np.rad2deg(np.arctan2(x, y))
+    pa[pa < 0.] += 360.
     pa = np.array(["{0:.1f}".format(x) for x in pa])
     ##########################################################################
     # Initialize final array
