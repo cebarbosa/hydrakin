@@ -15,6 +15,7 @@ from scipy.interpolate import interp1d
 
 from config import *
 import canvas as cv
+import cap_loess_2d as ll
 
 def get_ventimiglia2010():
     """ Read data from Ventimiglia+ 2010. """
@@ -24,8 +25,9 @@ def get_ventimiglia2010():
     r, theta = xy2polar(x, y)
     velocity_offset = 72.0
     z = np.nan * np.zeros_like(v)
+    sn = np.ones_like(v) * 1000
     return np.column_stack((x, y, r, theta, v+velocity_offset,verr, sig,
-                            sigerr, z, z, z, z))
+                            sigerr, z, z, z, z, sn))
 
 def get_richtler():
     """ Retrieve data from Richtler et al. 2011. """
@@ -46,8 +48,9 @@ def get_richtler():
         r, theta = xy2polar(x, y)
         velocity_offset = -14.0
         z = np.nan * np.zeros_like(v)
+        sn = np.ones_like(v) * 1000
         table = np.column_stack((x, y, r, theta, v + velocity_offset, verr,
-                                 sig, sigerr, z, z, z, z))
+                                 sig, sigerr, z, z, z, z, sn))
         if i == 0:
             tables = table
         else:
@@ -234,7 +237,7 @@ def plot_folded(datasets, radius=None):
     # General setting for the plots
     colors = ("r", "b", "g")
     symbols = ("o", "s", "^")
-    ylims = [[3300, 4600], [100, 700], [-.3, .3], [-.3,.3]]
+    ylims = [[3600, 4200], [100, 700], [-.3, .3], [-.3,.3]]
     xlims = [0, 360]
     ylabels = [r"$V_{\rm{LOS}}$ (km/s)", r"$\sigma_{\rm{LOS}}$ (km/s)",
                r"$h_3$", r"$h_4$"]
@@ -243,62 +246,88 @@ def plot_folded(datasets, radius=None):
              "pa_folded_h4"]
     sn_min = [10, 10, 10, 10]
     sn = np.loadtxt(intable, usecols=(14,))
+    sn = np.vstack((sn, sn, sn))
     fs = _large_fig_settings()
+    frac_loess = 0.2
     ##########################################################################
     # Set the default radius
     if radius is None:
         radius = np.linspace(0,40,5)
     ##########################################################################
-    pax, pay = np.sin(np.deg2rad(63)), np.cos(np.deg2rad(63))
     for mm in range(4):
-        for i, d in enumerate(datasets):
-            x, y, r, theta = d[:,:4].T
-            moment = d[:,np.arange(4,12,2)[mm]].T
-            error = np.clip(d[:,np.arange(5,13,2)[mm]].T, 0, 1000)
-            fig = plt.figure(2, figsize=(fs["width"], fs["height"]))
-            for j in range(len(radius) - 1):
-                rmin = radius[j]
-                rmax = radius[j+1]
+        fig = plt.figure(2, figsize=(fs["width"], fs["height"]))
+        for j in range(len(radius) - 1):
+            ###############################################################
+            # Initialize axes
+            ax = plt.subplot(len(radius)-1, 1, len(radius)-1-j)
+            ax.minorticks_on()
+            ax.set_xlim(pa0 - 90, pa0 + 90)
+            ax2 = ax.twiny()
+            ax2.set_xlim(pa0 + 90 + 180, pa0 - 90 + 180)
+            ax2.minorticks_on()
+            #################################################################
+            rmin = radius[j]
+            rmax = radius[j+1]
+            for i, d in enumerate(datasets):
+                x, y, r, theta = d[:,:4].T
+                moment = d[:,np.arange(4,12,2)[mm]].T
+                error = np.clip(d[:,np.arange(5,13,2)[mm]].T, 0, 1000)
+                sn = d[:,12]
+                if i == 0:
+                    loess = ll.loess_2d(x, y, moment, frac=frac_loess)
+                else:
+                    loess = moment
+                data = np.column_stack((theta, moment, error, loess, r, sn))
+                data = data[np.argsort(data[:,0])]
+                datam = np.copy(data)
+                datam[:,0] -= 360.
+                datap = np.copy(data)
+                datap[:,0] += 360
+                data = np.vstack((datam, data, datap))
                 ###############################################################
                 # Select regions
-                idx = np.argwhere((r >= rmin) & (r < rmax))
+                idx = np.argwhere((data[:,4] >= rmin) & (data[:,4] < rmax))
                 # S/N cut for our dataset
                 if i == 0:
-                    idxsn = np.where(sn > sn_min[mm])
+                    idxsn = np.where(data[:,5] > sn_min[mm])
                     idx = np.intersect1d(idx, idxsn)
                 ##############################################################
                 idx = idx.ravel()
-                v = np.rad2deg(np.arccos((x[idx] * pax + y[idx] * pay) / np.sqrt(x[idx]**2 + y[idx]**2)))
-                print theta[idx]
-                print np.abs(theta[idx] - pa0)
-                raw_input()
-                # Produces figure
-                ax = plt.subplot(len(radius)-1, 1, len(radius)-1-j)
-                ax.minorticks_on()
-                if len(idx) > 0:
-                    ax.errorbar(theta[idx], moment[idx], yerr=error[idx],
-                        fmt=symbols[i], ecolor=mec, c=colors[i],
-                        mec=mec, ms=9, zorder=-i)
-                ax.set_xlim(xlims)
-                ax.set_ylim(ylims[mm])
-                ax.set_ylabel(ylabels[mm])
-                ax.axvline(x=0, ls="--", c="k")
-                ax.annotate("$R$(kpc)$\in [{0:.1f},{1:.1f}[$".format(rmin,
-                            rmax), xy=(0.75, 0.8), xycoords='axes fraction',
-                            fontsize=14, horizontalalignment='center',
-                            verticalalignment='bottom',
-                            bbox=dict(boxstyle="round, pad=0.3", fc="w"))
-                if mm > 1:
-                    ax.axhline(y=0, ls="--", c="k")
-                if j == 0:
-                    ax.set_xlabel("PA (degree)")
-                ax.axvline(x=63, ls="--", c="k")
-                ax.axvline(x=63+180, ls="--", c="k")
-                if j != 0:
-                    ax.xaxis.set_major_formatter(plt.NullFormatter())
+                subset = data[idx]
+                ax.errorbar(subset[:,0], subset[:,1], yerr=subset[:,2],
+                            fmt=symbols[i], ecolor=mec, c="k",
+                            mec="k", ms=9, zorder=-i, mew=1.2)
+                ax2.errorbar(subset[:,0], subset[:,1], yerr=subset[:,2],
+                        fmt=symbols[i], ecolor=mec, c="w",
+                        mec="r", ms=9, zorder=-i, mew=1.2)
+                if i == 0:
+                    ax.plot(subset[:,0], subset[:,3], "-k")
+                    ax2.plot(subset[:,0], subset[:,3], "-r")
+            ax.set_ylim(ylims[mm])
+            ax.set_ylabel(ylabels[mm])
+            ax2.annotate("${0:.1f} \leq R$(kpc)$<{1:.1f}$".format(rmin,
+                        rmax), xy=(0.22, 0.15), xycoords='axes fraction',
+                        fontsize=14, horizontalalignment='center',
+                        verticalalignment='bottom',
+                        bbox=dict(boxstyle="round, pad=0.3", fc="w"),
+                        alpha=1, zorder=3)
+            if mm > 1:
+                ax.axhline(y=0, ls="--", c="k")
+            if j == 0:
+                ax.set_xlabel("PA (degree)")
+            else:
+                ax.xaxis.set_major_formatter(plt.NullFormatter())
+            for tl in ax2.get_xticklabels():
+                tl.set_color('r')
+            if j == len(radius) - 2:
+               ax2.set_xlabel("PA (degree)", color="r")
+            else:
+               ax2.xaxis.set_major_formatter(plt.NullFormatter())
+            ax.axvline(x=63, ls="--", c="k")
+
         plt.subplots_adjust(left=fs["left"], right=fs["right"],
-                            bottom=fs["bottom"], top=0.98,
-                            hspace=fs["hspace"])
+                        bottom=fs["bottom"], top=fs["top"],
+                        hspace=fs["hspace"])
         plt.savefig(os.path.join(figures_dir, "{0}.png".format(names[mm])))
         plt.clf()
     return
@@ -401,7 +430,7 @@ if __name__ == "__main__":
     ###########################################################################
     # Loading data
     intable = "results.tab"
-    data = np.loadtxt(intable, usecols=(1,2,3,4,5,6,7,8,9,10,11,12))
+    data = np.loadtxt(intable, usecols=(1,2,3,4,5,6,7,8,9,10,11,12,14))
     idx = data[:,3] < 0
     data[idx,3] += 360.
     v10 = get_ventimiglia2010()
