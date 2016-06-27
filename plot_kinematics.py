@@ -212,7 +212,7 @@ def plot_rings(datasets, radius=None):
                 ax.set_ylim(ylims[mm])
                 ax.set_ylabel(ylabels[mm])
                 ax.axvline(x=0, ls="--", c="k")
-                ax.annotate("$R$(kpc)$\in [{0:.1f},{1:.1f}[$".format(rmin,
+                ax.annotate("${0:.1f}\leq R$(kpc)$<{1:.1f}$".format(rmin,
                             rmax), xy=(0.75, 0.8), xycoords='axes fraction',
                             fontsize=14, horizontalalignment='center',
                             verticalalignment='bottom',
@@ -437,10 +437,10 @@ if __name__ == "__main__":
     r11 = get_richtler()
     ###########################################################################
     # Radial plots in conic sections
-    # plot_cones((data, v10, r11), pas=None, dpa=22.5)
+    plot_cones((data, v10, r11), pas=None, dpa=22.5)
     ##########################################################################
     # Azimuthal plots
-    # plot_rings((data, v10, r11))
+    plot_rings((data, v10, r11))
     ##########################################################################
     # Folded azimuthal plots
     plot_folded((data, v10, r11))
