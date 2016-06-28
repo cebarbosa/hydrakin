@@ -232,10 +232,9 @@ def plot_rings(datasets, radius=None):
         plt.clf()
     return
 
-def plot_folded(datasets, radius=None):
+def plot_folded_rings(datasets, radius=None):
     """ Make azimuthal plots in radial sections. """
     # General setting for the plots
-    colors = ("r", "b", "g")
     symbols = ("o", "s", "^")
     ylims = [[3600, 4200], [100, 700], [-.3, .3], [-.3,.3]]
     xlims = [0, 360]
@@ -325,6 +324,130 @@ def plot_folded(datasets, radius=None):
                ax2.xaxis.set_major_formatter(plt.NullFormatter())
             ax.axvline(x=63, ls="--", c="k")
 
+        plt.subplots_adjust(left=fs["left"], right=fs["right"],
+                        bottom=fs["bottom"], top=fs["top"],
+                        hspace=fs["hspace"])
+        plt.savefig(os.path.join(figures_dir, "{0}.png".format(names[mm])))
+        plt.clf()
+    return
+
+def plot_folded_cones(datasets, pas=None, dpa=22.5):
+    """ Make azimuthal plots in radial sections. """
+    # General setting for the plots
+    colors = ("k", "w", "g", "w")
+    symbols = ("o", "s", "^", None)
+    ecolor = ("0.7", "0.7", "0.7", "1.0")
+    ylims = [[3600, 4200], [100, 700], [-.3, .3], [-.3,.3]]
+    xlims = [0, 360]
+    ylabels = [r"$V_{\rm{LOS}}$ (km/s)", r"$\sigma_{\rm{LOS}}$ (km/s)",
+               r"$h_3$", r"$h_4$"]
+    mec = ("k", "r")
+    names = ["rad_folded_vel", "rad_folded_sigma", "rad_folded_h3",
+             "rad_folded_h4"]
+    sn_min = [10, 10, 10, 10, 0]
+    fs = _large_fig_settings()
+    frac_loess = 0.2
+    ##########################################################################
+    # Set the default radius
+    # Set the default position angles
+    if pas is None:
+        pas = np.linspace(0, 180, 5)[:-1] + pa0
+    ##########################################################################
+    for mm in range(4):
+        fig = plt.figure(2, figsize=(fs["width"], fs["height"]))
+        for j,pa in enumerate(pas):
+            ###############################################################
+            # Initialize axes
+            ax1 = plt.subplot(len(pas), 1, len(pas)-j)
+            ax1.minorticks_on()
+            ax1.set_xlim(0, 40)
+            ax2 = ax1.twiny()
+            ax2.set_xlim(0, 40 / re)
+            ax2.minorticks_on()
+            #################################################################
+            for i, d in enumerate(datasets):
+                x, y, r, theta = d[:,:4].T
+                moment = d[:,np.arange(4,12,2)[mm]].T
+                error = np.clip(d[:,np.arange(5,13,2)[mm]].T, 0, 1000)
+                sn = d[:,12]
+                if i == 3:
+                    idx = np.isfinite(moment)
+                    x = x[idx]
+                    y = y[idx]
+                    r = r[idx]
+                    theta = theta[idx]
+                    moment = moment[idx]
+                    error = error[idx]
+                    sn = sn[idx]
+                    loess = ll.loess_2d(x, y, moment, frac=frac_loess)
+                else:
+                    loess = moment
+                data = np.column_stack((theta, moment, error, loess, r, sn))
+                data = data[np.argsort(data[:,0])]
+                datam = np.copy(data)
+                datam[:,0] -= 360.
+                datap = np.copy(data)
+                datap[:,0] += 360
+                data = np.vstack((datam, data, datap))
+                ###############################################################
+                # Select conic regions
+                idx1 = np.argwhere((data[:,0] > pa - dpa) &
+                                    (data[:,0] < pa + dpa)).ravel().tolist()
+                idx2 = np.argwhere((data[:,0] > pa - dpa + 180) &
+                                    (data[:,0] < pa + dpa + 180)).ravel().tolist()
+                #==========================================================
+                # Include central points of our dataset in all subplots
+                if i in [0,3]:
+                    idx1 += np.argwhere((data[:,0] > pa - 90) &
+                                        (data[:,0] < pa + 90) &
+                                        (data[:,4] < 8)).ravel().tolist()
+                    idx2 += np.argwhere((data[:,0] > pa - 90 + 180) &
+                                        (data[:,0] < pa + 90 + 180) &
+                                        (data[:,4] < 4)).ravel().tolist()
+                #==========================================================
+                idx1 = np.unique(idx1)
+                idx2 = np.unique(idx2)
+                #=============================================================
+                # S/N cut for our dataset
+                if i == 0:
+                    idxsn = np.where(data[:,5] > sn_min[mm])
+                    idx1 = np.intersect1d(idx1, idxsn)
+                    idx2 = np.intersect1d(idx2, idxsn)
+                #=============================================================
+                ##############################################################
+                for k, idx in enumerate([idx1, idx2]):
+                    if not len(idx):
+                        continue
+                    subset = data[idx]
+                    subset = subset[np.argsort(subset[:,4])]
+                    ax1.errorbar(subset[:,4], subset[:,1], yerr=subset[:,2],
+                                fmt=symbols[i], ecolor=ecolor[i], c=colors[k],
+                                mec=mec[k], ms=9, zorder=-i, mew=1.2)
+                    ax1.set_ylim(ylims[mm])
+                    ax1.set_ylabel(ylabels[mm])
+                    if i == 3:
+                        ax1.plot(subset[:,4], subset[:,3], "-{0}".format(mec[k]))
+                if mm > 1:
+                    ax1.axhline(y=0, ls="--", c="k")
+                if j == 0:
+                    ax1.set_xlabel("$R$ (kpc)")
+                else:
+                    ax1.xaxis.set_major_formatter(plt.NullFormatter())
+                if j == len(pas) -1:
+                   ax2.set_xlabel("$ R / R_e$")
+                else:
+                   ax2.xaxis.set_major_formatter(plt.NullFormatter())
+                ax1.annotate("PA={0:.1f}$\pm${1:.1f}$^{{\\rm o}}$".format(pa,
+                            dpa), xy=(0.2, 0.8), xycoords='axes fraction',
+                            fontsize=12, horizontalalignment='center',
+                            verticalalignment='bottom',
+                            color="k")
+                ax1.annotate("PA={0:.1f}$\pm${1:.1f}$^{{\\rm o}}$".format(
+                            pa+180, dpa), xy=(0.2, 0.68),
+                            xycoords='axes fraction',
+                            fontsize=12, horizontalalignment='center',
+                            verticalalignment='bottom',
+                            color="r")
         plt.subplots_adjust(left=fs["left"], right=fs["right"],
                         bottom=fs["bottom"], top=fs["top"],
                         hspace=fs["hspace"])
@@ -435,15 +558,17 @@ if __name__ == "__main__":
     data[idx,3] += 360.
     v10 = get_ventimiglia2010()
     r11 = get_richtler()
+    combined= np.vstack((data, v10[v10[:,2]>10], r11[r11[:,2]>10]))
     ###########################################################################
     # Radial plots in conic sections
-    plot_cones((data, v10, r11), pas=None, dpa=22.5)
+    # plot_cones((data, v10, r11), pas=None, dpa=22.5)
     ##########################################################################
     # Azimuthal plots
-    plot_rings((data, v10, r11))
+    # plot_rings((data, v10, r11))
     ##########################################################################
-    # Folded azimuthal plots
-    plot_folded((data, v10, r11))
+    # Folded plots
+    # plot_folded_rings((data, v10, r11))
+    plot_folded_cones((data, v10, r11, combined))
     ##########################################################################
     # Mini-mosaics
     # cones_vertical()
