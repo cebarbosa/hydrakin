@@ -12,11 +12,10 @@ import pickle
 import numpy as np
 import pyfits as pf
 from scipy import ndimage
-import matplotlib.pyplot as plt
 
 from ppxf import ppxf
 import ppxf_util as util
-from setup_n3311 import *
+from config import *
  
 def run_ppxf(spectra, velscale):
     """ Run pPXF in a list of spectra"""
@@ -153,7 +152,7 @@ if __name__ == '__main__':
     FWHM_spec = 2.1 # FORS2 for Hydra observations has an instrumental
                    # resolution FWHM of 4.2A.
     # Change to data directory according to setup.py program
-    os.chdir(data_dir)
+    os.chdir(results_dir)
     # Select spectra to be used in the analysis
     # List of fits files in the folder
     # spectra = [x for x in os.listdir(".") if x.endswith(".fits")]
