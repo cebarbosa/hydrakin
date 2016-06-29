@@ -15,8 +15,9 @@ import pickle
 
 import numpy as np
 import pyfits as pf
-from scipy import ndimage
 import matplotlib.pyplot as plt
+from scipy import ndimage
+from matplotlib import gridspec
 
 from ppxf import ppxf
 import ppxf_util as util
@@ -159,13 +160,14 @@ class pPXF():
             pp = pickle.load(f)
         self.__dict__ = pp.__dict__.copy()
         self.spec = os.path.join(data_dir, spec)
-        self.vhelio = pf.getval(self.spec, "VHELIO")
+        self.vhelio = pf.getval(os.path.join(data_dir, self.spec), "VHELIO")
         self.velscale = velscale
         self.w = wavelength_array(os.path.join(data_dir, spec))
         self.flux = pf.getdata(self.spec)
         self.flux_log, self.logw, velscale = util.log_rebin(
                         [self.w[0], self.w[-1]], self.flux, velscale=velscale) 
         self.w_log = np.exp(self.logw)
+        self.calc_sn()
         return
 
     def calc_sn(self, w1=5200., w2=5500.):
@@ -194,6 +196,79 @@ class pPXF():
         self.erroor = np.maximum(self.error, self.mc_err)
         return
 
+    def plot(self):
+        """ Plot pPXF run in a output file"""
+        if self.ncomp > 1:
+            sol = self.sol[0]
+            sol2 = self.sol[1]
+        else:
+            sol = self.sol
+        plt.figure(1)
+        plt.clf()
+        gs = gridspec.GridSpec(2, 1, height_ratios=[3,1])
+        ax = plt.subplot(gs[0])
+        ax.minorticks_on()
+        ax.plot(self.w_log, self.galaxy, "-k", lw=2.,
+                label=self.spec.replace(".fits", "").upper().replace("_",
+                       " ").split("/")[-1])
+        ax.plot(self.w_log, self.bestfit, "-", lw=2., c="r",
+                label="Bestfit")
+        ax.xaxis.set_ticklabels([])
+        if hasattr(self, "gas"):
+            if self.has_emission:
+                ax.plot(self.w, self.gas, "-b", lw=1., label="Emission Lines")
+        # if self.sky != None:
+        #     ax.plot(self.w[self.goodpixels], self.bestsky[self.goodpixels], \
+        #             "-", lw=1, c="g", label="Sky")
+        leg = plt.legend(loc=3, prop={"size":10})
+        # leg.get_frame().set_linewidth(0.0)
+        plt.axhline(y=0, ls="--", c="k")
+        plt.ylabel(r"Flux (counts)", size=15)
+        print self.__dict__.keys()
+        plt.annotate(r"$\chi^2=${0:.2f}".format(self.chi2),
+                     xycoords='axes fraction',
+                    xy=(0.05,0.9), size=16)
+        plt.annotate(r"S/N={0}".format(np.around(self.sn,1)),
+                     xycoords='axes fraction', xy=(0.25,0.9), size=16)
+        plt.annotate(r"V={0} km/s".format(np.around(sol[0] + self.vhelio)),
+                     xycoords='axes fraction', xy=(0.45,0.9), size=16,
+                     color="r")
+        plt.annotate(r"$\sigma$={0} km/s".format(np.around(sol[1])),
+                     xycoords='axes fraction', xy=(0.75,0.9), size=16,
+                     color="r")
+        if self.ncomp > 1:
+            plt.annotate(r"V={0} km/s".format(np.around(sol2[0])),
+                         xycoords='axes fraction', xy=(0.45,0.84),
+                         size=16, color="b")
+            plt.annotate(r"$\sigma$={0} km/s".format(np.around(sol2[1])),
+                         xycoords='axes fraction', xy=(0.75,0.84),
+                         size=16, color="b")
+        ax1 = plt.subplot(gs[1])
+        ax1.minorticks_on()
+        ax1.set_xlim(self.w[0], self.w[-1])
+        ax1.plot(self.w_log[self.goodpixels], (self.galaxy[self.goodpixels] - \
+                 self.bestfit[self.goodpixels]), "-k")
+        ax1.axhline(y=0, ls="--", c="k")
+        ax1.set_ylim(-5 * self.noise, 5 * self.noise)
+        ax1.set_xlabel(r"$\lambda$ ($\AA$)", size=15)
+        ax1.set_ylabel(r"$\Delta$Flux", size=15)
+        ax.set_xlim(4800, 5800)
+        ax1.set_xlim(4800, 5800)
+        ax.set_ylim(0, 2 * np.median(self.galaxy))
+        gs.update(hspace=0.075, left=0.15, bottom=0.1, top=0.98, right=0.97)
+        output = os.path.join(figures_dir,
+                              self.spec.replace(".fits",".png").split("/")[-1])
+        plt.savefig(output)
+        return
+
+def plot(spectra):
+    """ Produces plot for a list of spectra. """
+    global velscale
+    for spec in spectra:
+        pp = pPXF(spec, velscale)
+        pp.plot()
+
+
 if __name__ == '__main__':
     # Constants
     c = 299792.458 # Speed of light
@@ -202,18 +277,19 @@ if __name__ == '__main__':
                    # resolution FWHM of 4.2A.
     # Change to data directory according to setup.py program
     # best directory = best .pkl files (a mix of d6m4 and d8m2)
-    os.chdir(data_dir)
+    os.chdir(results_dir)
     # Select spectra to be used in the analysis
     # List of fits files in the folder
     # spectra = [x for x in os.listdir(".") if x.endswith(".pkl")]
     # spectra = [x.replace(".pkl", ".fits") for x in spectra]
     # You can also specify the spectra manually
     # spectra = ["fin_n3311inn2_s38.fits"] # Single spectrum
-    spectra = ["fin1_n3311cen1_s14.fits", "fin1_n3311cen2_s45.fits", "fin1_n3311inn2_s39.fits"] # More than one spectrum
+    spectra = ["fin1_n3311inn2_s25.fits", "fin1_n3311cen2_s40.fits"] # More than one spectrum
     # spectra = ["fin1_n3311cen1_s14.0001.fits", "fin1_n3311cen1_s14.0002.fits", "fin1_n3311cen1_s14.0003.fits", "fin1_n3311cen2_s45.0001.fits", "fin1_n3311cen2_s45.0002.fits", "fin1_n3311cen2_s45.0003.fits", "fin1_n3311inn2_s39.0001.fits", "fin1_n3311inn2_s39.0002.fits", "fin1_n3311inn2_s39.0003.fits", "fin1_n3311inn2_s39.0004.fits", "fin1_n3311inn2_s39.0005.fits"] # More than one
     # Go to the main routine of fitting
     # velscale is defined in the setup.py file, it is used to rebin data
     # run_ppxf(spectra[0:132], velscale) # All spectra
     # run_ppxf(spectra[0:1], velscale) # Single spectrum
     # Make_table produces a table with summary of results and errors
-    make_table(spectra, mc=False)
+    # make_table(spectra, mc=False)
+    plot(spectra)
