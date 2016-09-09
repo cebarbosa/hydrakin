@@ -15,7 +15,7 @@ import scipy.ndimage as ndimage
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.collections import PolyCollection
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, LogNorm
 from matplotlib.patches import Rectangle
 from matplotlib.collections import LineCollection
 
@@ -85,7 +85,6 @@ def get_positions_by_slits(slits):
         xy.append([canvas.slits.x[index], canvas.slits.y[index]])
     return np.array(xy)
 
-    
 def get_coords(specs):
     slits = cv.Slitlets()
     coords = []
@@ -179,7 +178,7 @@ def make_sn(sn_thres=0, format="png", snsig=False):
     """ Produces a map of the signal to noise per bin according to pPXF. """
     ###############################################
     # Read values of S/N
-    sn = 1.8 * np.loadtxt(outtable, usecols=(14,))
+    sn = np.loadtxt(outtable, usecols=(14,))
     if snsig:
         sigma = np.loadtxt(outtable, usecols=(3,))
         sn /= sigma/100.
@@ -192,12 +191,12 @@ def make_sn(sn_thres=0, format="png", snsig=False):
     sn = sn[good]
     ###############################################
     # Colorbar limits
-    vmin, vmax = sn_thres, 50
+    vmin, vmax = 10, 50
     # Set limits for the plot
     norm = Normalize(vmin, vmax)
     ###############################################
     # Set colormap
-    cmap = "cubelaw"
+    cmap = "cubelaw_r"
     # cmap = "Spectral"
     # Produces a collection of polygons with colors according to S/N values
     coll = PolyCollection(polygons_bins[good], array=sn, cmap=cmap,
@@ -220,8 +219,7 @@ def make_sn(sn_thres=0, format="png", snsig=False):
     # Draw actual slit positions
     # canvas.draw_slits(ax, slit_type=1, fc="r", ec="r", ignore=ignore_slits )
     # canvas.draw_slits(ax, slit_type=3, fc="r", ec="r", ignore=ignore_slits )
-    canvas.draw_slits(ax, slit_type=1, fc="r", ec="r")
-    canvas.draw_slits(ax, slit_type=3, fc="r", ec="r")
+    canvas.draw_slits_ids(ax, slits, fc="r", ec="r")
     ###############################################
     # Draw white rectangle in the position of the colorbar so background 
     # stars do not overplot the labels and ticks
@@ -229,7 +227,7 @@ def make_sn(sn_thres=0, format="png", snsig=False):
                         color="w"))
     ###############################################
     # Draw the colorbar
-    label = r"100 S/N [pix] / $\sigma$" if snsig else r"S/N [$\AA^{-1}$]"
+    label = r"100 S/N [pix] / $\sigma$" if snsig else r"S/N"
     draw_colorbar(fig, ax, coll, ticks=np.linspace(vmin,vmax,5),
                   cblabel=label, cbar_pos=[0.16, 0.15, 0.17, 0.04])
     ##############################################
@@ -333,7 +331,6 @@ def make_kin_summary(loess=False, contours="vband", format="png",
     # If using S/N / sigma instead of S/N
     if sn_sig == True:
         sn /= data[1] / 100.
-    else: sn = 1.8 * sn
     ########################################################
     # Read values of other authors
     tab1a, tab1b = get_richtler()
@@ -347,7 +344,7 @@ def make_kin_summary(loess=False, contours="vband", format="png",
                 r"$h_3$", r"$h_4$"]
     # Ranges of the plots
     # lims = [[3750, 4000], [200, 500], [None, None], [None, None]]
-    lims = [[3700, 4100], [180, 600], [-0.08, 0.08], [-0.05, 0.11]]
+    lims = [[3700, 4100], [180, 500], [-0.08, 0.08], [-0.05, 0.11]]
     # Position of the colorbars
     xcb = [0.075, 0.555]
     xcb = xcb + xcb
@@ -503,19 +500,19 @@ def make_kinematics():
     cb_label = [r"V$_{\rm LOS}$ (km/s)", r"$\sigma_{\rm LOS}$ (km/s)",
                 r"$h_3$", r"$h_4$"]
     # lims = [[3750,4000], [150,500], [-0.08, 0.08], [-0.15, 0.15] ]
-    lims = [[3700, 4100], [180, 500], [-0.06, 0.06], [-0.03, 0.11]]
+    lims = [[3640, 4040], [220, 500], [-0.08, 0.08], [-0.11, 0.11]]
     xcb = [0.068, 0.385, 0.705]
     ###########################################################################
     # Set the threshold S/N for smoothing
     # Higher values than this values are not smoothed
-    sn_thres = [25, 25, 1000, 1000]
+    sn_thres = [50, 50, 1000, 1000]
     ###########################################################################
     # Read values of other authors
     tab1a, tab1b = get_richtler()
     tab2 = get_ventimiglia()
     ###########################################################################
     # Set the colormap
-    cmap = "cubelaw"
+    cmap = "Spectral_r"
     ###########################################################################
     # Loop for figures
     for i, vector in enumerate(data):
@@ -544,6 +541,10 @@ def make_kinematics():
         ####################################################
         for j in range(3):
             ax = plt.subplot(gs[j])
+            # if i <1:
+            #     norm = LogNorm(vmin=vmin, vmax=vmax)
+            # else:
+            #     norm = Normalize(vmin=vmin, vmax=vmax)
             norm = Normalize(vmin=vmin, vmax=vmax)
             coll = PolyCollection(polygons_bins[good], array=vs[j],
                                  cmap=cmap, edgecolors='w', norm=norm,
@@ -598,7 +599,7 @@ if __name__ == "__main__":
     ####################################################
     # Set the fraction to be used in the smoothing maps
     # frac_loess = 0.4
-    frac_loess = 0.3
+    frac_loess = 0.2
     ####################################################
     # Set the name of the table after merging tables
     ####################################################
@@ -633,9 +634,11 @@ if __name__ == "__main__":
     slits = sorted([y for x,y in zip(canvas.slits.type, canvas.slits.ids) 
              if x in [1,3]])
     # Remove slits in the chip gaps
-    # ignore_slits = ["cen2_s24", "inn2_s21", "cen1_s22",
-    #                "inn1_s22", "inn2_s27", "inn1s35"]
-    ignore_slits = ["cen2_s24", "inn1_s22", "cen1_s22"]
+    ignore_slits = ["cen2_s24", "inn2_s21", "cen1_s22",
+                   "inn1_s22", "inn2_s27", "inn1s35"]
+    ignore_slits = ["cen2_s24", "inn1_s22", "cen1_s22", "inn1_s22",
+                    "inn1s35", "inn1_s39", "inn2_s38", "inn2_s37",
+                    "cen1_s45", "inn1_s41", "out2_s36"]
     slits = [x for x in slits if x not in ignore_slits]
     ####################################################
     # Positions of the slits
