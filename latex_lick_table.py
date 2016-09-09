@@ -134,7 +134,6 @@ if __name__ == "__main__":
             " & ".join(val2str(d, err)) + " & " + p
         results.append(s) 
     output = os.path.join(home, spectype, "lick.tex")
-    print output
     results.sort()
     with open(output, "w") as f:
         f.write("\\\\\n".join(results) + "\\\\")
