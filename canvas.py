@@ -130,7 +130,22 @@ class CanvasImage():
                                       alpha=1., linewidth=.3)
             ax.add_patch(patch)
         return
-    
+
+    def draw_slits_ids(self, ax, slits, fc="none", ec="k"):
+        """ Draw slits of a given a numerical type. """
+        ii = np.arange(len(self.slits.ids))[np.in1d(self.slits.ids, slits)]
+        rects = self.calc_vertices(self.slits.x[ii], self.slits.y[ii],
+                                         self.slits.w[ii], self.slits.l[ii],
+                                         self.slits.ang[ii] + self.posangle)
+        codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO,
+                 Path.CLOSEPOLY, ]
+        for rect in rects:
+            path = Path(rect, codes)
+            patch = patches.PathPatch(path, facecolor=fc, edgecolor=ec,
+                                      alpha=1., linewidth=.3)
+            ax.add_patch(patch)
+        return
+
     def draw_slits_masks(self, inds, c = "r"):
         """ Draw slits by mask."""
         rects = self.calc_vertices(self.slits.x[ids], self.slits.y[ids],
