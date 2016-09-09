@@ -21,7 +21,7 @@ import canvas as cv
 def make_tex_table(usepoly=False):
     workdir = os.path.join(home, "single2")
     os.chdir(workdir)
-    table = "ppxf_results.dat"
+    table = "ppxf_results_best.dat"
     specs = np.loadtxt(table, usecols=(0,), dtype=str)
     ids = [x.split("n3311")[1][:-5].replace("_", " ").lower() for x in specs]
     ##########################################################################
@@ -100,3 +100,12 @@ def make_str_err(vals, errs):
 if __name__ == "__main__":
     canvas = cv.CanvasImage("vband")
     make_tex_table()
+    table = "kinematics.tex"
+    data = np.loadtxt(table, usecols=(9,), delimiter="&", dtype=str)
+    sn = np.array([float(x.replace("\\", "")) for x in data])
+    comments = np.where(sn < 10, "%", "")
+    with open(table) as f:
+        lines = [x for x in f.readlines()]
+    with open(table, "w") as f:
+        for comm, line in zip(comments, lines):
+            f.write(comm + line)
