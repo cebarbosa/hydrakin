@@ -76,7 +76,7 @@ def plot_cones(datasets, pas=None, dpa=22.5):
     # General setting for the plots
     colors = ("r", "b", "g")
     symbols = ("o", "s", "^")
-    ylims = [[3300, 4600], [100, 600], [-.3, .3], [-.3,.3]]
+    ylims = [[3500, 4300], [100, 700], [-.3, .3], [-.3,.3]]
     xlims = [-40, 40]
     ylabels = [r"$V_{\rm{LOS}}$ (km/s)", r"$\sigma_{\rm{LOS}}$ (km/s)",
                r"$h_3$", r"$h_4$"]
@@ -138,11 +138,16 @@ def plot_cones(datasets, pas=None, dpa=22.5):
                         mec=mec, ms=9, zorder=-i)
                 ax.set_xlim(xlims)
                 ax.set_ylim(ylims[mm])
-                ax.set_ylabel(ylabels[mm])
+                ax.set_ylabel(ylabels[mm], fontsize=16)
                 ax.axvline(x=0, ls="--", c="k")
-                ax.annotate("PA={0:.1f}$\pm${1:.1f}$^{{\\rm o}}$".format(pa,
-                            dpa), xy=(0.5, 0.8), xycoords='axes fraction',
-                            fontsize=14, horizontalalignment='center',
+                deltapa = [180,180,180,-180 ]
+                ax.annotate("PA={2:3.0f}$^{{\\rm "
+                            "o}}$$\\leftarrow$$\\to$PA={0:3.0f}$^{{\\rm "
+                            "o}}$\n"
+                            "$\\Delta$PA=$\\pm${1:.1f}$^{{\\rm "
+                            "o}}$".format(pa, dpa, pa + deltapa[j]), xy=(0.5,
+                                                                     0.7), xycoords='axes fraction',
+                            fontsize=12, horizontalalignment='center',
                             verticalalignment='bottom',
                             bbox=dict(boxstyle="round, pad=0.3", fc="w"))
                 if mm > 1:
@@ -153,10 +158,16 @@ def plot_cones(datasets, pas=None, dpa=22.5):
                 ax2.minorticks_on()
                 ax2.set_xlim(xlims[0]/re, xlims[1]/re)
                 if j == 0:
-                    ax2.set_xlabel("R / R$_{\\rm e}$")
+                    ax2.set_xlabel("R / R$_{\\rm e}$", fontsize=16)
                 else:
                     ax2.xaxis.set_major_formatter(plt.NullFormatter())
-            ax.set_xlabel("R (kpc)")
+                if mm == 1:
+                    ax.axhline(y=647, ls="--", c="y")
+                    ax.axhline(y=470, ls=":", c="c")
+                if mm == 0:
+                    ax.axhline(y=3777, ls="--", c="y")
+                    ax.axhline(y=3825, ls="-.", c="0.5")
+            ax.set_xlabel("R (kpc)", fontsize=16)
         plt.subplots_adjust(left=fs["left"], right=fs["right"],
                             bottom=fs["bottom"], top=fs["top"],
                             hspace=fs["hspace"])
@@ -169,7 +180,7 @@ def plot_rings(datasets, radius=None):
     # General setting for the plots
     colors = ("r", "b", "g")
     symbols = ("o", "s", "^")
-    ylims = [[3300, 4600], [100, 700], [-.3, .3], [-.3,.3]]
+    ylims = [[3400, 4200], [100, 700], [-.3, .3], [-.3,.3]]
     xlims = [0, 360]
     ylabels = [r"$V_{\rm{LOS}}$ (km/s)", r"$\sigma_{\rm{LOS}}$ (km/s)",
                r"$h_3$", r"$h_4$"]
@@ -210,7 +221,7 @@ def plot_rings(datasets, radius=None):
                         mec=mec, ms=9, zorder=-i)
                 ax.set_xlim(xlims)
                 ax.set_ylim(ylims[mm])
-                ax.set_ylabel(ylabels[mm])
+                ax.set_ylabel(ylabels[mm], fontsize=16)
                 ax.axvline(x=0, ls="--", c="k")
                 ax.annotate("${0:.1f}\leq R$(kpc)$<{1:.1f}$".format(rmin,
                             rmax), xy=(0.75, 0.8), xycoords='axes fraction',
@@ -220,11 +231,17 @@ def plot_rings(datasets, radius=None):
                 if mm > 1:
                     ax.axhline(y=0, ls="--", c="k")
                 if j == 0:
-                    ax.set_xlabel("PA (degree)")
+                    ax.set_xlabel("PA (degree)", fontsize=16)
                 ax.axvline(x=63, ls="--", c="k")
                 ax.axvline(x=63+180, ls="--", c="k")
                 if j != 0:
                     ax.xaxis.set_major_formatter(plt.NullFormatter())
+                if mm == 1:
+                    ax.axhline(y=647, ls="--", c="y")
+                    ax.axhline(y=470, ls=":", c="c")
+                if mm == 0:
+                    ax.axhline(y=3777, ls="--", c="y")
+                    ax.axhline(y=3825, ls="-.", c="0.5")
         plt.subplots_adjust(left=fs["left"], right=fs["right"],
                             bottom=fs["bottom"], top=0.98,
                             hspace=fs["hspace"])
@@ -564,11 +581,11 @@ if __name__ == "__main__":
     # plot_cones((data, v10, r11), pas=None, dpa=22.5)
     ##########################################################################
     # Azimuthal plots
-    # plot_rings((data, v10, r11))
+    plot_rings((data, v10, r11))
     ##########################################################################
     # Folded plots
     # plot_folded_rings((data, v10, r11))
-    plot_folded_cones((data, v10, r11, combined))
+    # plot_folded_cones((data, v10, r11, combined))
     ##########################################################################
     # Mini-mosaics
     # cones_vertical()
