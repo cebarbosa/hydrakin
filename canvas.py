@@ -146,7 +146,7 @@ class CanvasImage():
             ax.add_patch(patch)
         return
 
-    def draw_slits_masks(self, inds, c = "r"):
+    def draw_slits_masks(self, ids, ax, c = "r"):
         """ Draw slits by mask."""
         rects = self.calc_vertices(self.slits.x[ids], self.slits.y[ids],
                                    self.slits.w[ids], self.slits.l[ids], 
@@ -165,6 +165,7 @@ class CanvasImage():
             if name.endswith("a"):
                 name = name[:-1]
             ax.annotate(name, (x,y), color=c, size=10)
+        return
 
     def get_positions_by_slits(self, ids):
         """ Get position of slits by the identification of slits """
@@ -183,7 +184,7 @@ class CanvasImage():
         plt.xlim(radius, -radius)
         plt.ylim(-radius, radius)
 
-    def make_contours(self, color="k"):
+    def make_contours(self, color="k", lw=1.):
         """ Overplot countours of image. """
         if self.imtype == "residual":
             self.contours = np.linspace(22, 25.5, 8)
@@ -193,7 +194,7 @@ class CanvasImage():
             nsig = 3.
         datasmooth = ndimage.gaussian_filter(self.data, nsig, order=0.)
         plt.contour(datasmooth, self.contours, extent=self.extent, 
-                    colors=color, linewidths=1.0)
+                    colors=color, linewidths=lw)
         return
 
     def rescale(self):
@@ -273,7 +274,7 @@ class Slitlets():
         fldr = os.path.join(tables_dir,"reftables2")
         files = [os.path.join(fldr, x) for x in os.listdir(fldr)]
         table = []
-        for line in fileinput.input(files):
+        for line in fileinput.input(sorted(files)):
             table.append(line)
         self.table = table
         return
@@ -286,9 +287,9 @@ class Slitlets():
     
     def set_arrays(self):
         self.ra, self.dec, self.l = np.loadtxt(self.table, 
-                                                    usecols=(1,2,6)).T        
+                                                    usecols=(1,2,6)).T
         self.type = np.loadtxt(self.table, usecols=(7,))
-        self.ang = -40. * np.ones_like(self.l) 
+        self.ang = -40. * np.ones_like(self.l)
         self.w = np.ones_like(self.l) 
         
 def cart2polar(x, y):
