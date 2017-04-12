@@ -146,20 +146,20 @@ class CanvasImage():
             ax.add_patch(patch)
         return
 
-    def draw_slits_masks(self, ids, ax, c = "r"):
+    def draw_slits_masks(self, idx, ax, c = "r"):
         """ Draw slits by mask."""
-        rects = self.calc_vertices(self.slits.x[ids], self.slits.y[ids],
-                                   self.slits.w[ids], self.slits.l[ids], 
-                                   self.slits.ang[ids] + self.posangle)
+        rects = self.calc_vertices(self.slits.x[idx], self.slits.y[idx],
+                                   self.slits.w[idx], self.slits.l[idx],
+                                   self.slits.ang[idx] + self.posangle)
         codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO,
                  Path.CLOSEPOLY,]
         for i, rect in enumerate(rects): 
             path = Path(rect, codes)
             patch = patches.PathPatch(path, facecolor=c, edgecolor=c)
             ax.add_patch(patch)
-            name = self.slits.ids[ids[i]].split("_")[1][1:]
-            x = self.slits.x[ids[i]]
-            y = self.slits.y[ids[i]]
+            name = self.slits.ids[idx[i]].split("_")[1][1:]
+            x = self.slits.x[idx[i]]
+            y = self.slits.y[idx[i]]
             if name.endswith("b"):
                 continue
             if name.endswith("a"):
