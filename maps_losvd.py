@@ -45,7 +45,7 @@ def set_canvas(plot_residual):
 
     return canvas
 
-def make_voronoi(xy, xy2=None, rout=40.):
+def make_voronoi(xy, xy2=None, rout=40., x0=0., y0=0):
     """ Produce Voronoi tesselation of a set of positions. 
     
     ================
@@ -62,7 +62,8 @@ def make_voronoi(xy, xy2=None, rout=40.):
     nbins = len(xy)
     if xy2 is not None:
         xy = np.concatenate((xy, xy2))
-    circle = cv.circle_xy(40.)
+    circle = cv.circle_xy(rout)
+    circle = np.add(circle, [x0, y0])
     points = np.concatenate((xy, circle))
     polygons = np.array(voronoi_polygons(points))[:nbins]
     return polygons
@@ -666,8 +667,8 @@ if __name__ == "__main__":
     # make_sn()
     ####################################################
     # Produce maps for all moments
-    make_kinematics()
+    # make_kinematics()
     # make_kin_summary(loess=True, contours="residual", format="png",
     #                 sn_lims=[5.0,10.0,15.0,15.0], sn_loess=[20,20,300,300],
     #                 sn_sig=False)
-
+    ###########################################################################
