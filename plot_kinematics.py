@@ -354,16 +354,15 @@ def plot_folded_cones(datasets, pas=None, dpa=22.5):
     colors = ("k", "w", "g", "w")
     symbols = ("o", "s", "^", None)
     ecolor = ("0.7", "0.7", "0.7", "1.0")
-    ylims = [[3600, 4200], [100, 700], [-.3, .3], [-.3,.3]]
-    xlims = [0, 360]
+    ylims = [[3300, 5100], [0, 950], [-.3, .3], [-.2, .4]]
     ylabels = [r"$V_{\rm{LOS}}$ (km/s)", r"$\sigma_{\rm{LOS}}$ (km/s)",
                r"$h_3$", r"$h_4$"]
     mec = ("k", "r")
     names = ["rad_folded_vel", "rad_folded_sigma", "rad_folded_h3",
              "rad_folded_h4"]
-    sn_min = [10, 10, 10, 10, 0]
+    sn_min = [10, 10, 15, 15, 0]
     fs = _large_fig_settings()
-    frac_loess = 0.2
+    frac_loess = 0.3
     ##########################################################################
     # Set the default radius
     # Set the default position angles
@@ -372,10 +371,10 @@ def plot_folded_cones(datasets, pas=None, dpa=22.5):
     ##########################################################################
     for mm in range(4):
         fig = plt.figure(2, figsize=(fs["width"], fs["height"]))
-        for j,pa in enumerate(pas):
+        for j, pa in enumerate(pas):
             ###############################################################
             # Initialize axes
-            ax1 = plt.subplot(len(pas), 1, len(pas)-j)
+            ax1 = plt.subplot(len(pas), 1, j + 1)
             ax1.minorticks_on()
             ax1.set_xlim(0, 40)
             ax2 = ax1.twiny()
@@ -446,11 +445,11 @@ def plot_folded_cones(datasets, pas=None, dpa=22.5):
                         ax1.plot(subset[:,4], subset[:,3], "-{0}".format(mec[k]))
                 if mm > 1:
                     ax1.axhline(y=0, ls="--", c="k")
-                if j == 0:
+                if j == len(pas) -1:
                     ax1.set_xlabel("$R$ (kpc)")
                 else:
                     ax1.xaxis.set_major_formatter(plt.NullFormatter())
-                if j == len(pas) -1:
+                if j == 0:
                    ax2.set_xlabel("$ R / R_e$")
                 else:
                    ax2.xaxis.set_major_formatter(plt.NullFormatter())
@@ -532,7 +531,7 @@ def rings_vertical(radius=None):
     for j in range(len(radius)-1):
         rmin = radius[j]
         rmax = radius[j+1]
-        ax = plt.subplot(len(radius)-1, 1, j+1)
+        ax = plt.subplot(len(radius)-1, 1, len(radius) - j - 1)
         ax.minorticks_on()
         ax.set_aspect('equal')
         theta = np.linspace(0, 2 * np.pi, 360)
@@ -548,13 +547,15 @@ def rings_vertical(radius=None):
         ax.set_ylim(-40, 40)
         ax.set_ylabel("Y (kpc)")
         ax.tick_params(labelsize=10)
-        if j < len(radius)-2:
+        if j == 0:
+            ax.set_xlabel("X (kpc)")
+        else:
             ax.xaxis.set_major_formatter(plt.NullFormatter())
-    ax.set_xlabel("X (kpc)")
     plt.subplots_adjust(left=fs["left"], right=fs["right"],
                             bottom=fs["bottom"], top=0.98,
                             hspace=fs["hspace"])
     plt.savefig(os.path.join(figures_dir, "rings.png"))
+    return
 
 def _large_fig_settings():
     return {"width":6, "height":8.5, "left":0.135, "right":0.98,
@@ -581,11 +582,11 @@ if __name__ == "__main__":
     # plot_cones((data, v10, r11), pas=None, dpa=22.5)
     ##########################################################################
     # Azimuthal plots
-    plot_rings((data, v10, r11))
+    # plot_rings((data, v10, r11))
     ##########################################################################
     # Folded plots
     # plot_folded_rings((data, v10, r11))
-    # plot_folded_cones((data, v10, r11, combined))
+    plot_folded_cones((data, v10, r11, combined))
     ##########################################################################
     # Mini-mosaics
     # cones_vertical()
