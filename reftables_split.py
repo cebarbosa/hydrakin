@@ -23,11 +23,11 @@ def split_hcg007(slitdata):
     slits = ["cen1_s14", "cen2_s45", "inn2_s39"]
     # Borders defined by Michael's sketch
     borders = [np.array([1., 17 - 5.7, 17 + 5.5, 35.]),
-               np.array([1., 21 - 6.2, 21 + 6.2, 40.]),
-               np.array([1., 36 - 9., 36 - 3., 36 + 3., 36 + 9., 63.])]
+               np.array([1., 21 - 6.2, 21 + 6.2, 40.])[::-1],
+               np.array([1., 36 - 9., 36 - 3., 36 + 3., 36 + 9., 63.])[::-1]]
     borders = dict(zip(slits, borders))
     # Identification of the sub slits
-    sid= [["b", "a", "c"], ["c", "a", "b"], ["e", "c", "a", "b", "d"]]
+    sid= [["b", "a", "c"], ["b", "a", "c"], ["d", "b", "a", "c", "e"]]
     sid = dict(zip(slits, sid))
     ###########################################################################
     # Processing input from table
@@ -48,7 +48,8 @@ def split_hcg007(slitdata):
     sizes = np.diff(borders)
     center = 0.5 * (borders[-1] - borders[0])
     y = borders[:-1] + 0.5 * np.diff(borders) - center
-    R = np.array([[np.cos(theta), np.sin(theta)], [-np.sin(theta), np.cos(theta)]])
+    R = np.array([[np.cos(theta), np.sin(theta)],
+                  [-np.sin(theta), np.cos(theta)]])
     xy = np.column_stack((np.zeros_like(y), y))
     xy = np.dot(xy, R)
     ##########################################################################
@@ -64,8 +65,8 @@ def split_hcg007(slitdata):
     return np.array(lines)
 
 if __name__ == "__main__":
-    reftables_dir = os.path.join(tables_dir, "reftables1")
-    output_dir = os.path.join(tables_dir, "reftables2")
+    reftables_dir = os.path.join(tables_dir, "reftables3")
+    output_dir = os.path.join(tables_dir, "reftables3")
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
     img_dir = "//home/kadu/Dropbox/hydra1/data/slitimages"

@@ -8,7 +8,6 @@ Produces maps for LOSVD for the Hydra I cluster core
 """
 from __future__ import division
 import os
-from getpass import getuser
 
 import numpy as np
 import scipy.ndimage as ndimage
@@ -23,7 +22,7 @@ from config import *
 import canvas as cv
 import cap_loess_2d as ll
 from voronoi_polygons import voronoi_polygons
-import newcolorbars as nc
+from newcolorbars import cubelaw
 
 def set_canvas(plot_residual):
     """ Set canvas according to type of contours. """
@@ -72,7 +71,7 @@ def get_positions(specs):
     """ Matches two different tables using the spectra column. """
     xy = []
     for i, spec in enumerate(specs):
-	slit = spec.split("n3311", 1)[1].replace(".fits", "")
+        slit = spec.split("n3311", 1)[1].replace(".fits", "")
         # slit = spec.split(".")[0].split("_", 1)[1][5:] 
         index = canvas.slits.ids.index(slit)
         xy.append([canvas.slits.x[index], canvas.slits.y[index]])
@@ -353,7 +352,7 @@ def make_kin_summary(loess=False, contours="vband", format="png",
     yc2 = 0.085
     ycb = [yc1, yc1, yc2, yc2]
     # Colormap
-    cmap = "cubelaw"
+    cmap = cubelaw()
     ylabels = [1,0,1,0]
     xlabels = [0,0,1,1]
     cb_fmts = ["%d", "%d", "%.2f", "%.2f"]
@@ -668,7 +667,7 @@ if __name__ == "__main__":
     ####################################################
     # Produce maps for all moments
     # make_kinematics()
-    # make_kin_summary(loess=True, contours="residual", format="png",
-    #                 sn_lims=[5.0,10.0,15.0,15.0], sn_loess=[20,20,300,300],
-    #                 sn_sig=False)
+    make_kin_summary(loess=True, contours="residual", format="png",
+                    sn_lims=[5.0,10.0,15.0,15.0], sn_loess=[20,20,300,300],
+                    sn_sig=False)
     ###########################################################################

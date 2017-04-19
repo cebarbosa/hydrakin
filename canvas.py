@@ -13,6 +13,8 @@ import pywcs
 import numpy as np
 import pyfits as pf
 import scipy.ndimage as ndimage
+from astropy.io import fits
+from astropy.wcs import WCS
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 
@@ -55,7 +57,12 @@ class CanvasImage():
         ysize, xsize = self.data.shape
         pixcrd = np.array([[1,1], [ysize, xsize]])
         # For some reason pywcs is not making things right here for vband image
-        if self.imtype in ["vband", "residual"]:
+        if self.imtype in ["vband"]:
+            h = fits.getheader(self.image)
+            wcs = WCS(h)
+            y1, x1 = self.data.shape
+            ra, dec = wcs.all_pix2world([1, x1], [1, y1], 1)
+        elif self.imtype in ["residual"]:
             ra, dec = [[159.2268, 159.0858], [-27.5978, -27.4792]]
         if self.imtype in ["xrays"]:
             ra, dec = np.array([[159.6196417, 158.8087792],
@@ -218,7 +225,7 @@ class CanvasImage():
         
         """
         if self.imtype == "vband":
-            self.image = os.path.join(images_dir,  "Vband_large.fits")
+            self.image = os.path.join(images_dir,  "Vband_wcs.fits")
             self.ps = 0.252 
             self.posangle = 0.
         elif self.imtype == "residual":
@@ -237,8 +244,10 @@ class CanvasImage():
             
     def set_center(self):
         """ Set the central coordinate properties. """
-        self.ra0 = 159.1783
-        self.dec0 = -27.52833
+        # self.ra0 = 159.1783
+        # self.dec0 = -27.52833
+        self.ra0 = 159.17835
+        self.dec0 = -27.528173
         center = self.wcs.wcs_sky2pix([[self.ra0]], [[self.dec0]], 1)
         self.xc, self.yc = center[0][0], center[1][0]
         return
@@ -257,8 +266,8 @@ class CanvasImage():
         self.slits.w = self.arcsec2kpc(self.slits.w)
         self.slits.l = self.arcsec2kpc(self.slits.l)
         self.slits.vertices = self.calc_vertices(self.slits.x, 
-                              self.slits.y, self.arcsec2kpc(self.slits.w), 
-                              self.arcsec2kpc(self.slits.l), 
+                              self.slits.y, self.slits.w,
+                              self.slits.l,
                               ang=self.slits.pa)
         return
         
@@ -271,7 +280,7 @@ class Slitlets():
         self.set_arrays()
     
     def load_files(self):
-        fldr = os.path.join(tables_dir,"reftables2")
+        fldr = os.path.join(tables_dir,"reftables")
         files = [os.path.join(fldr, x) for x in os.listdir(fldr)]
         table = []
         for line in fileinput.input(sorted(files)):

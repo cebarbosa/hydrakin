@@ -39,6 +39,7 @@ def find_chart_hcc007(intable):
     xy = get_positions_by_slits(ids, canvas)
     canvas.make_contours(lw=0.3)
     canvas.draw_slits(ax, slit_type=3)
+    canvas.draw_slits(ax, slit_type=1)
     ax.set_xlim(-2.5,-10.5)
     ax.set_ylim(-31.5,-26)
     for a, b, c in zip(xy[:,0], xy[:,1], ids):
@@ -48,6 +49,7 @@ def find_chart_hcc007(intable):
     plt.subplots_adjust(right=0.98, top=0.99, bottom=0.135)
     plt.savefig(os.path.join(figures_dir, "find_chart_hcc007.png"),
                 dpi=250)
+    plt.show()
     return
 
 def make_kinematics():
@@ -59,8 +61,6 @@ def make_kinematics():
     ids = [x.split("n3311")[1].split(".")[0] for x in specs]
     canvas = cv.CanvasImage("vband")
     idx = [canvas.slits.ids.index(iid) for iid in ids]
-    canvas.slits.x += -0.46
-    canvas.slits.y +=  0.25
     rects = canvas.calc_vertices(canvas.slits.x[idx], canvas.slits.y[idx],
                                canvas.slits.w[idx], canvas.slits.l[idx],
                                canvas.slits.ang[idx] + canvas.posangle)
@@ -105,5 +105,5 @@ def make_kinematics():
 if __name__ == "__main__":
     plt.style.use("seaborn-paper")
     table = os.path.join(results_dir, "ppxf_results_hcc007.dat")
-    # find_chart_hcc007(table)
-    make_kinematics()
+    find_chart_hcc007(table)
+    # make_kinematics()
