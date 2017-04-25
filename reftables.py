@@ -98,17 +98,17 @@ def include_sky_references(tablename):
     return
 
 def add_extra_slits_n3311(field, outtable):
-    if field not in ["cen1", "cen2", "inn2"]:
+    if field not in ["cen1", "cen2"]:
         return
     with open(outtable) as f:
         head = f.readline()
         data = np.loadtxt(f, dtype=str)
-    slits = {"cen1" : ["14", "29"], "cen2" : ["32", "45"], "inn2" : ["39"]}
-    names = {"cen1" : [["b", "a", "c"], ["a", "b"]],
-             "cen2" : [["a", "b"], ["b", "a", "c"]],
+    slits = {"cen1" : ["29"], "cen2" : ["32"]}
+    names = {"cen1" : [["a", "b"]],
+             "cen2" : [["a", "b"]],
              "inn2" : [["d", "b", "a", "c", "e"]]}
-    widths = {"cen1" : [np.array([2.6, 2.8, 3.1]), np.array([3,3])],
-              "cen2": [np.array([2.5, 2.5]), np.array([3.3, 3.2, 3.5])],
+    widths = {"cen1" : [np.array([3,3])],
+              "cen2": [np.array([2.5, 2.5])],
               "inn2" : [np.array([4.5, 1.5, 1.5, 1.5, 6.5])]}
     theta = np.deg2rad(-40)
     R = np.array([[np.cos(theta), np.sin(theta)],
@@ -144,11 +144,71 @@ def add_extra_slits_n3311(field, outtable):
         f.write(head)
         np.savetxt(f, data, fmt="%s")
 
+def add_extra_slits_hcc007(field, outtable):
+    """ Calculate slitlets based on table from Michael. """
+    if field not in ["cen1", "cen2", "inn2"]:
+        return
+    numbers = {"cen1" : "14", "cen2" : "45", "inn2" : "39"}
+    specs = {"cen1" : "cen1s14", "cen2" : "cen2s45", "inn2" : "inn2s39"}
+    spec = specs[field]
+    tablename = os.path.join(tables_dir, "hcc007_slits_edited.dat")
+    specs, names =  np.loadtxt(tablename, usecols=(0, 2), unpack=True, dtype=str)
+    data = np.loadtxt(tablename, usecols=(8))
+    # Select data
+    idx = np.where(spec == specs)[0]
+    names = names[idx]
+    d = data[idx]
+    ###########################################################################
+    # Getting data from line
+    with open(outtable) as f:
+        head = f.readline()
+        data = np.loadtxt(f, dtype=str)
+    idx = np.where(data[:, 0] == numbers[field])[0][0]
+    line = data[idx]
+    ids = np.array(["{}{}".format(numbers[field], x) for x in names])
+    ra = float(line[1])
+    dec = float(line[2])
+    n = len(d)
+    xpos = np.repeat(line[3], n)
+    ypos = np.repeat(line[4], n)
+    field = np.repeat(line[5], n)
+    flag = np.repeat(line[7], n)
+    ref = np.repeat(line[8], n)
+    #######################################################################
+    borders = np.hstack((0,d))
+    length = np.sum(np.diff(borders)) * 0.25
+    borders -= 0.5 * (borders[-1] + borders[0])
+    borders = length * (borders - borders[0]) / (borders[-1] - borders[0])
+    sizes = np.diff(borders)
+    # Performing calculations
+    thetas = {"cen1s14" : -40, "cen2s45" : 140, "inn2s39": 140}
+    theta = np.deg2rad(thetas[spec])
+    R = np.array([[np.cos(theta), np.sin(theta)],
+                  [-np.sin(theta), np.cos(theta)]])
+    # Calculating new slitlets
+    center = 0.5 * (borders[-1] - borders[0])
+    y = borders[:-1] + 0.5 * sizes - center
+    xy = np.column_stack((np.zeros_like(y), y))
+    xy = np.dot(xy, R)
+    # Manual offsets
+    offset = {"cen1s14" : (0.2,.2), "cen2s45" : (.8,0.4), "inn2s39": (1.3,0.8)}
+    ras = ra + (xy[:, 0] + offset[spec][0] ) / 3600.
+    decs = dec + (xy[:, 1] + offset[spec][1]) / 3600.
+    #######################################################################
+    newlines = np.column_stack((ids, ras, decs, xpos, ypos, field,
+                                sizes, flag, ref))
+    data = np.vstack((data, newlines))
+    data[idx,0] = "#" + data[idx,0]
+    with open(outtable, "w") as f:
+        f.write(head)
+        np.savetxt(f, data, fmt="%s")
+
 
 
 if __name__ == "__main__":
     fields = ["cen1", "cen2", "inn1", "inn2", "out1", "out2"]
     outdir = os.path.join(tables_dir, "reftables")
+
     if not os.path.exists(outdir):
         os.mkdir(outdir)
     for field in fields:
@@ -156,4 +216,5 @@ if __name__ == "__main__":
         include_types(field, outtable)
         include_sky_references(outtable)
         add_extra_slits_n3311(field, outtable)
+        add_extra_slits_hcc007(field, outtable)
 
