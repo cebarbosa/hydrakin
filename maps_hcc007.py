@@ -43,13 +43,12 @@ def find_chart_hcc007(intable):
     ax.set_xlim(-2.5,-10.5)
     ax.set_ylim(-31.5,-26)
     for a, b, c in zip(xy[:,0], xy[:,1], ids):
-        ax.text(a, b, c, weight="bold", color="C0", fontsize=8)
+        ax.text(a, b, c, weight="bold", color="b", fontsize=8)
     ax.set_xlabel("X (kpc)")
     ax.set_ylabel("Y (kpc)")
     plt.subplots_adjust(right=0.98, top=0.99, bottom=0.135)
     plt.savefig(os.path.join(figures_dir, "find_chart_hcc007.png"),
                 dpi=250)
-    plt.show()
     return
 
 def make_kinematics():
