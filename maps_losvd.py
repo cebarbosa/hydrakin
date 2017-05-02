@@ -650,7 +650,7 @@ if __name__ == "__main__":
     ####################################################
     # Produce maps for all moments
     # make_kinematics()
-    make_kin_summary(loess=True, contours="residual", format="png",
+    make_kin_summary(loess=True, contours="vband", format="png",
                      sn_lims=[5.0, 10.0, 15.0, 15.0],
                      sn_loess=[20, 20, 300, 300],
                      sn_sig=False)

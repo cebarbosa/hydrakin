@@ -198,7 +198,7 @@ def add_extra_slits_hcc007(field, outtable):
     newlines = np.column_stack((ids, ras, decs, xpos, ypos, field,
                                 sizes, flag, ref))
     data = np.vstack((data, newlines))
-    data[idx,0] = "#" + data[idx,0]
+    # data[idx,0] = "#" + data[idx,0]
     with open(outtable, "w") as f:
         f.write(head)
         np.savetxt(f, data, fmt="%s")
