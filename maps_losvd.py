@@ -100,8 +100,6 @@ def merge_tables():
         The version in this file is abridged to include only kinematic data.
         """
     filename = "ppxf_results_best.dat"
-    #    files = ["ppxf_results2.dat", "lick2.tsv", "ages_Z_alpha2.tsv",
-    #             "lick_errs2.tsv"]
     s1 = np.genfromtxt(filename, usecols=(0,), dtype=None).tolist()
     sref = s1[:]
     sref.sort()
@@ -198,7 +196,7 @@ def make_sn(sn_thres=0, format="png", snsig=False):
     ###############################################
     # Set colormap
     cmap = "cubelaw_r"
-    # cmap = "Spectral"
+    cmap = "Spectral"
     # Produces a collection of polygons with colors according to S/N values
     coll = PolyCollection(polygons_bins[good], array=sn, cmap=cmap,
                           edgecolors='w', norm=norm, linewidths=1.)
@@ -353,7 +351,7 @@ def make_kin_summary(loess=False, contours="vband", format="png",
     yc2 = 0.085
     ycb = [yc1, yc1, yc2, yc2]
     # Colormap
-    cmap = cubelaw()
+    cmap = "Spectral_r"
     ylabels = [1, 0, 1, 0]
     xlabels = [0, 0, 1, 1]
     cb_fmts = ["%d", "%d", "%.2f", "%.2f"]
