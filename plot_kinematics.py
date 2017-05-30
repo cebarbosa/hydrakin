@@ -70,7 +70,6 @@ def xy2polar(x, y):
     theta[theta < 0] += 360.
     return r, theta
 
-
 def plot_cones(datasets, pas=None, dpa=22.5):
     """ Make radial plots using conic sections in the XY plane. """
     # General setting for the plots
@@ -175,22 +174,24 @@ def plot_cones(datasets, pas=None, dpa=22.5):
         plt.clf()
     return
 
-def plot_rings(datasets, radius=None):
+def plot_rings(datasets, radius=None, use_err_max=True, use_sn_min=False):
     """ Make azimuthal plots in radial sections. """
     # General setting for the plots
+    vel0 = 3863 # km / s
     colors = ("r", "b", "g")
     symbols = ("o", "s", "^")
-    ylims = [[3400, 4200], [100, 700], [-.3, .3], [-.3,.3]]
+    ylims = [[3200, 5100], [0, 750], [-.25, .35], [-.2,.5]]
     xlims = [0, 360]
     ylabels = [r"$V_{\rm{LOS}}$ (km/s)", r"$\sigma_{\rm{LOS}}$ (km/s)",
                r"$h_3$", r"$h_4$"]
     mec = "0.7" # Grayscale level for bars and symbol edge colors
     names = ["pa_vel", "pa_sigma", "pa_h3", "pa_h4"]
-    sn_min = [10, 10, 10, 10]
+    sn_min = [10, 15, 20, 20]
+    err_max = [100, 80, 0.1, 0.1]
     sn = np.loadtxt(intable, usecols=(14,))
     fs = _large_fig_settings()
     ##########################################################################
-    # Set the default radius
+    # Set the default position angles
     if radius is None:
         radius = np.linspace(0,40,5)
     ##########################################################################
@@ -199,7 +200,7 @@ def plot_rings(datasets, radius=None):
             x, y, r, theta = d[:,:4].T
             moment = d[:,np.arange(4,12,2)[mm]].T
             error = np.clip(d[:,np.arange(5,13,2)[mm]].T, 0, 1000)
-            fig = plt.figure(2, figsize=(fs["width"], fs["height"]))
+            fig = plt.figure(1, figsize=(fs["width"], fs["height"]))
             for j in range(len(radius) - 1):
                 rmin = radius[j]
                 rmax = radius[j+1]
@@ -207,9 +208,13 @@ def plot_rings(datasets, radius=None):
                 # Select regions
                 idx = np.argwhere((r >= rmin) & (r < rmax))
                 # S/N cut for our dataset
-                if i == 0:
-                    idxsn = np.where(sn > sn_min[mm])
-                    idx = np.intersect1d(idx, idxsn)
+                if i == 0: # Cuts apply only to our data set
+                    if use_sn_min:
+                        idxsn = np.where(sn > sn_min[mm])
+                        idx = np.intersect1d(idx, idxsn)
+                    if use_err_max:
+                        idx_err = np.where(error < err_max[mm])
+                        idx = np.intersect1d(idx, idx_err)
                 ##############################################################
                 idx = idx.ravel()
                 # Produces figure
@@ -221,27 +226,29 @@ def plot_rings(datasets, radius=None):
                         mec=mec, ms=9, zorder=-i)
                 ax.set_xlim(xlims)
                 ax.set_ylim(ylims[mm])
-                ax.set_ylabel(ylabels[mm], fontsize=16)
+                ax.set_ylabel(ylabels[mm])
                 ax.axvline(x=0, ls="--", c="k")
-                ax.annotate("${0:.1f}\leq R$(kpc)$<{1:.1f}$".format(rmin,
-                            rmax), xy=(0.75, 0.8), xycoords='axes fraction',
-                            fontsize=14, horizontalalignment='center',
+                ax.axhline(y=vel0, ls="--", c="k")
+                ax.annotate("${0:.1f}\leq R$(kpc)$<{1:.1f}$".format(rmin, rmax),
+                            xy=(0.75, 0.8), xycoords='axes fraction',
+                            fontsize=12, horizontalalignment='center',
                             verticalalignment='bottom',
                             bbox=dict(boxstyle="round, pad=0.3", fc="w"))
                 if mm > 1:
                     ax.axhline(y=0, ls="--", c="k")
                 if j == 0:
-                    ax.set_xlabel("PA (degree)", fontsize=16)
+                    ax.set_xlabel("PA (degree)")
                 ax.axvline(x=63, ls="--", c="k")
                 ax.axvline(x=63+180, ls="--", c="k")
                 if j != 0:
                     ax.xaxis.set_major_formatter(plt.NullFormatter())
-                if mm == 1:
-                    ax.axhline(y=647, ls="--", c="y")
-                    ax.axhline(y=470, ls=":", c="c")
-                if mm == 0:
-                    ax.axhline(y=3777, ls="--", c="y")
-                    ax.axhline(y=3825, ls="-.", c="0.5")
+                # Additional horizontal lines
+                # if mm == 1:
+                #     ax.axhline(y=647, ls="--", c="y")
+                #     ax.axhline(y=470, ls=":", c="c")
+                # if mm == 0:
+                #     ax.axhline(y=3777, ls="--", c="y")
+                #     ax.axhline(y=3825, ls="-.", c="0.5")
         plt.subplots_adjust(left=fs["left"], right=fs["right"],
                             bottom=fs["bottom"], top=0.98,
                             hspace=fs["hspace"])
@@ -471,7 +478,6 @@ def plot_folded_cones(datasets, pas=None, dpa=22.5):
         plt.clf()
     return
 
-
 def cones_vertical(pas=None, dpa=22.5):
     """ Make map indicating the conic sections. """
     if pas is None:
@@ -517,7 +523,7 @@ def cones_vertical(pas=None, dpa=22.5):
     plt.savefig(os.path.join(figures_dir, "cones.png"))
 
 def rings_vertical(radius=None):
-    """ Make map indicating the conic sections. """
+    """ Make map indicating the rings. """
     if radius is None:
         radius = np.linspace(0,40,5)
     canvas = cv.CanvasImage("vband")
@@ -531,7 +537,7 @@ def rings_vertical(radius=None):
     for j in range(len(radius)-1):
         rmin = radius[j]
         rmax = radius[j+1]
-        ax = plt.subplot(len(radius)-1, 1, len(radius) - j - 1)
+        ax = plt.subplot(len(radius)-1, 1, len(radius) -j -1)
         ax.minorticks_on()
         ax.set_aspect('equal')
         theta = np.linspace(0, 2 * np.pi, 360)
@@ -579,14 +585,14 @@ if __name__ == "__main__":
     combined= np.vstack((data, v10[v10[:,2]>10], r11[r11[:,2]>10]))
     ###########################################################################
     # Radial plots in conic sections
-    # plot_cones((data, v10, r11), pas=None, dpa=22.5)
+    plot_cones((data, v10, r11), pas=None, dpa=22.5)
     ##########################################################################
     # Azimuthal plots
     # plot_rings((data, v10, r11))
     ##########################################################################
     # Folded plots
     # plot_folded_rings((data, v10, r11))
-    plot_folded_cones((data, v10, r11, combined))
+    # plot_folded_cones((data, v10, r11, combined))
     ##########################################################################
     # Mini-mosaics
     # cones_vertical()
