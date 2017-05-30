@@ -352,19 +352,22 @@ def plot_folded_rings(datasets, radius=None):
         plt.clf()
     return
 
-def plot_folded_cones(datasets, pas=None, dpa=22.5):
+def plot_folded_cones(datasets, pas=None, dpa=22.5, use_err_max=True,
+                      use_sn_min=False):
     """ Make azimuthal plots in radial sections. """
     # General setting for the plots
     colors = ("k", "w", "g", "w")
     symbols = ("o", "s", "^", None)
     ecolor = ("0.7", "0.7", "0.7", "1.0")
-    ylims = [[3300, 5100], [0, 950], [-.3, .3], [-.2, .4]]
+    ylims = [[3200, 5100], [0, 950], [-.3, .3], [-.2,.4]]
+    xlims = [0, 360]
     ylabels = [r"$V_{\rm{LOS}}$ (km/s)", r"$\sigma_{\rm{LOS}}$ (km/s)",
                r"$h_3$", r"$h_4$"]
     mec = ("k", "r")
     names = ["rad_folded_vel", "rad_folded_sigma", "rad_folded_h3",
              "rad_folded_h4"]
     sn_min = [10, 10, 15, 15, 0]
+    err_max = [100, 80, 0.1, 0.1]
     fs = _large_fig_settings()
     frac_loess = 0.3
     ##########################################################################
@@ -375,9 +378,10 @@ def plot_folded_cones(datasets, pas=None, dpa=22.5):
     ##########################################################################
     for mm in range(4):
         fig = plt.figure(2, figsize=(fs["width"], fs["height"]))
-        for j, pa in enumerate(pas):
+        for j,pa in enumerate(pas):
             ###############################################################
             # Initialize axes
+            # ax1 = plt.subplot(len(pas), 1, len(pas)-j)
             ax1 = plt.subplot(len(pas), 1, j + 1)
             ax1.minorticks_on()
             ax1.set_xlim(0, 40)
@@ -430,9 +434,14 @@ def plot_folded_cones(datasets, pas=None, dpa=22.5):
                 #=============================================================
                 # S/N cut for our dataset
                 if i == 0:
-                    idxsn = np.where(data[:,5] > sn_min[mm])
-                    idx1 = np.intersect1d(idx1, idxsn)
-                    idx2 = np.intersect1d(idx2, idxsn)
+                    if use_sn_min:
+                        idxsn = np.where(data[:,5] > sn_min[mm])
+                        idx1 = np.intersect1d(idx1, idxsn)
+                        idx2 = np.intersect1d(idx2, idxsn)
+                    if use_err_max:
+                        idx_err = np.where(data[:,2] < err_max[mm])
+                        idx1 = np.intersect1d(idx1, idx_err)
+                        idx2 = np.intersect1d(idx2, idx_err)
                 #=============================================================
                 ##############################################################
                 for k, idx in enumerate([idx1, idx2]):
@@ -449,21 +458,23 @@ def plot_folded_cones(datasets, pas=None, dpa=22.5):
                         ax1.plot(subset[:,4], subset[:,3], "-{0}".format(mec[k]))
                 if mm > 1:
                     ax1.axhline(y=0, ls="--", c="k")
-                if j == len(pas) -1:
+                # if j == 0:
+                if j == len(pas) - 1:
                     ax1.set_xlabel("$R$ (kpc)")
                 else:
                     ax1.xaxis.set_major_formatter(plt.NullFormatter())
+                # if j == len(pas) -1:
                 if j == 0:
                    ax2.set_xlabel("$ R / R_e$")
                 else:
                    ax2.xaxis.set_major_formatter(plt.NullFormatter())
                 ax1.annotate("PA={0:.1f}$\pm${1:.1f}$^{{\\rm o}}$".format(pa,
-                            dpa), xy=(0.2, 0.8), xycoords='axes fraction',
+                            dpa), xy=(0.17, 0.8), xycoords='axes fraction',
                             fontsize=12, horizontalalignment='center',
                             verticalalignment='bottom',
                             color="k")
                 ax1.annotate("PA={0:.1f}$\pm${1:.1f}$^{{\\rm o}}$".format(
-                            pa+180, dpa), xy=(0.2, 0.68),
+                            pa+180, dpa), xy=(0.17, 0.68),
                             xycoords='axes fraction',
                             fontsize=12, horizontalalignment='center',
                             verticalalignment='bottom',
@@ -583,14 +594,14 @@ if __name__ == "__main__":
     combined= np.vstack((data, v10[v10[:,2]>10], r11[r11[:,2]>10]))
     ###########################################################################
     # Radial plots in conic sections
-    plot_cones((data, v10, r11), pas=None, dpa=22.5)
+    # plot_cones((data, v10, r11), pas=None, dpa=22.5)
     ##########################################################################
     # Azimuthal plots
     # plot_rings((data, v10, r11))
     ##########################################################################
     # Folded plots
     # plot_folded_rings((data, v10, r11))
-    # plot_folded_cones((data, v10, r11, combined))
+    plot_folded_cones((data, v10, r11, combined))
     ##########################################################################
     # Mini-mosaics
     # cones_vertical()
