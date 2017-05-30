@@ -70,18 +70,20 @@ def xy2polar(x, y):
     theta[theta < 0] += 360.
     return r, theta
 
-def plot_cones(datasets, pas=None, dpa=22.5):
+def plot_cones(datasets, pas=None, dpa=22.5, use_err_max=True,
+               use_sn_min=False):
     """ Make radial plots using conic sections in the XY plane. """
     # General setting for the plots
     colors = ("r", "b", "g")
     symbols = ("o", "s", "^")
-    ylims = [[3500, 4300], [100, 700], [-.3, .3], [-.3,.3]]
+    ylims = [[3200, 5100], [0, 750], [-.25, .35], [-.2,.5]]
     xlims = [-40, 40]
     ylabels = [r"$V_{\rm{LOS}}$ (km/s)", r"$\sigma_{\rm{LOS}}$ (km/s)",
                r"$h_3$", r"$h_4$"]
     mec = "0.7" # Grayscale level for bars and symbol edge colors
     names = ["rad_vel", "rad_sigma", "rad_h3", "rad_h4"]
-    sn_min = [15, 15, 30, 30]
+    sn_min = [10, 15, 20, 20]
+    err_max = [100, 80, 0.1, 0.1]
     sn = np.loadtxt(intable, usecols=(14,))
     fs = _large_fig_settings()
     ##########################################################################
@@ -119,9 +121,14 @@ def plot_cones(datasets, pas=None, dpa=22.5):
                 #=============================================================
                 # S/N cut for our dataset
                 if i == 0:
-                    idxsn = np.where(sn > sn_min[mm])
-                    idx1 = np.intersect1d(idx1, idxsn)
-                    idx2 = np.intersect1d(idx2, idxsn)
+                    if use_sn_min:
+                        idxsn = np.where(sn > sn_min[mm])
+                        idx1 = np.intersect1d(idx1, idxsn)
+                        idx2 = np.intersect1d(idx2, idxsn)
+                    if use_err_max:
+                        idx_err = np.where(error < err_max[mm])
+                        idx1 = np.intersect1d(idx1, idx_err)
+                        idx2 = np.intersect1d(idx2, idx_err)
                 #=============================================================
                 ##############################################################
                 # Produces figure
@@ -137,15 +144,11 @@ def plot_cones(datasets, pas=None, dpa=22.5):
                         mec=mec, ms=9, zorder=-i)
                 ax.set_xlim(xlims)
                 ax.set_ylim(ylims[mm])
-                ax.set_ylabel(ylabels[mm], fontsize=16)
+                ax.set_ylabel(ylabels[mm])
                 ax.axvline(x=0, ls="--", c="k")
-                deltapa = [180,180,180,-180 ]
-                ax.annotate("PA={2:3.0f}$^{{\\rm "
-                            "o}}$$\\leftarrow$$\\to$PA={0:3.0f}$^{{\\rm "
-                            "o}}$\n"
-                            "$\\Delta$PA=$\\pm${1:.1f}$^{{\\rm "
-                            "o}}$".format(pa, dpa, pa + deltapa[j]), xy=(0.5,
-                                                                     0.7), xycoords='axes fraction',
+                ax.axhline(y=vel0, ls="--", c="k")
+                ax.annotate("PA={0:.1f}$\pm${1:.1f}$^{{\\rm o}}$".format(pa, dpa),
+                            xy=(0.5, 0.8), xycoords='axes fraction',
                             fontsize=12, horizontalalignment='center',
                             verticalalignment='bottom',
                             bbox=dict(boxstyle="round, pad=0.3", fc="w"))
@@ -157,16 +160,10 @@ def plot_cones(datasets, pas=None, dpa=22.5):
                 ax2.minorticks_on()
                 ax2.set_xlim(xlims[0]/re, xlims[1]/re)
                 if j == 0:
-                    ax2.set_xlabel("R / R$_{\\rm e}$", fontsize=16)
+                    ax2.set_xlabel("R / R$_{\\rm e}$")
                 else:
                     ax2.xaxis.set_major_formatter(plt.NullFormatter())
-                if mm == 1:
-                    ax.axhline(y=647, ls="--", c="y")
-                    ax.axhline(y=470, ls=":", c="c")
-                if mm == 0:
-                    ax.axhline(y=3777, ls="--", c="y")
-                    ax.axhline(y=3825, ls="-.", c="0.5")
-            ax.set_xlabel("R (kpc)", fontsize=16)
+            ax.set_xlabel("R (kpc)")
         plt.subplots_adjust(left=fs["left"], right=fs["right"],
                             bottom=fs["bottom"], top=fs["top"],
                             hspace=fs["hspace"])
@@ -574,6 +571,7 @@ def _small_fig_settings():
 if __name__ == "__main__":
     os.chdir(results_dir)
     np.set_printoptions(5, suppress=True)
+    vel0 = 3863  # km / s
     ###########################################################################
     # Loading data
     intable = "results.tab"
