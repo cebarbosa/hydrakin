@@ -9,9 +9,7 @@ Make general tools for produce maps
 import os
 import fileinput
 
-import pywcs
 import numpy as np
-import pyfits as pf
 import scipy.ndimage as ndimage
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -39,9 +37,9 @@ class CanvasImage():
         self.imtype = im
         self.set_input()
         self.D = 50.7 # Mpc
-        self.data = pf.getdata(self.image)
-        self.header = pf.getheader(self.image)
-        self.wcs = pywcs.WCS(self.header)
+        self.data = fits.getdata(self.image)
+        self.header = fits.getheader(self.image)
+        self.wcs = WCS(self.header)
         self.set_center()
         self.calc_extent()
         self.slits = Slitlets()
@@ -248,13 +246,13 @@ class CanvasImage():
         # self.dec0 = -27.52833
         self.ra0 = 159.17835
         self.dec0 = -27.528173
-        center = self.wcs.wcs_sky2pix([[self.ra0]], [[self.dec0]], 1)
+        center = self.wcs.wcs_world2pix([[self.ra0]], [[self.dec0]], 1)
         self.xc, self.yc = center[0][0], center[1][0]
         return
         
     def slit_arrays(self):
         """ Calculate arrays of slit-related properties and convert to kpc. """
-        self.slits.xpix, self.slits.ypix = self.wcs.wcs_sky2pix(self.slits.ra, 
+        self.slits.xpix, self.slits.ypix = self.wcs.wcs_world2pix(self.slits.ra,
                                                     self.slits.dec, 1)
         self.slits.xarcsec = 3600. * (self.slits.ra - self.ra0)
         self.slits.yarcsec = 3600. * (self.slits.dec - self.dec0)

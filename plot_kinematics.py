@@ -529,6 +529,7 @@ def cones_vertical(pas=None, dpa=22.5):
                             bottom=fs["bottom"], top=fs["top"],
                             hspace=fs["hspace"])
     plt.savefig(os.path.join(figures_dir, "cones.png"))
+    plt.show()
 
 def rings_vertical(radius=None):
     """ Make map indicating the rings. """
@@ -601,9 +602,9 @@ if __name__ == "__main__":
     ##########################################################################
     # Folded plots
     # plot_folded_rings((data, v10, r11))
-    plot_folded_cones((data, v10, r11, combined))
+    # plot_folded_cones((data, v10, r11, combined))
     ##########################################################################
     # Mini-mosaics
-    # cones_vertical()
+    cones_vertical()
     # rings_vertical()
     ##########################################################################
